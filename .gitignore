@@ -9,3 +9,5 @@ TAGS
 \#*\#
 .\#*
 *_flymake.py
+__pycache__/
+tests/

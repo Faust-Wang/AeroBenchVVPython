@@ -13,6 +13,6 @@ def rtau(dp):
     elif dp >= 50:
         rt = .1
     else:
-        rt = 1.9 - .036 * dp
+        rt = 1.9 - .036*dp
 
     return rt

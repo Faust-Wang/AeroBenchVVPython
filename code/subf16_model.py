@@ -44,7 +44,7 @@ from dampp import dampp
 
 from Morellif16 import Morellif16
 
-def subf16_model(x, u, model, adjust_cy=True, multipliers=None):
+def subf16_model(x, u, Xcg=0.35, model='stevens', adjust_cy=True, multipliers=None):
     '''output aircraft state vector derivative for a given input
 
     The reference for the model is Appendix A of Stevens & Lewis
@@ -68,7 +68,7 @@ def subf16_model(x, u, model, adjust_cy=True, multipliers=None):
     assert len(u) == 4
     assert multipliers is None or len(multipliers) == 7
 
-    xcg = 0.35
+    xcg = Xcg
 
     if multipliers is not None:
         xcg *= multipliers[0]
@@ -78,7 +78,7 @@ def subf16_model(x, u, model, adjust_cy=True, multipliers=None):
     s = 300
     b = 30
     cbar = 11.32
-    rm = 1.57e-3
+    rm = 1.57e-3    #(1 / m); m = weight/g  = 20500 / 32.17
     xcgr = .35
     he = 160.0
     c1 = -.770
