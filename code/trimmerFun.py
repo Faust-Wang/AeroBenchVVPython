@@ -12,27 +12,34 @@ states:                                              controls:
                                       x13 = pow         u4 = rudder
 '''
 
-from math import sin
+from math import sin, cos
 import numpy as np
 
-from scipy.optimize import minimize
+from scipy.optimize import minimize, fmin
 
 from clf16 import clf16
+from conf16 import turn_coord_cons, rate_of_climb_cons
 from adc import adc
 
-def trimmerFun(Xguess, Uguess, orient, inputs, printOn, model='stevens', adjust_cy=True):
+def trimmerFun(orient, inputs, printOn, Xcg=0.35, model='stevens', adjust_cy=False):
+# def trimmerFun(Xguess, Uguess, orient, inputs, printOn, Xcg=0.35, model='stevens', adjust_cy=True):
     'calculate equilibrium state'
 
-    assert isinstance(Xguess, np.ndarray)
-    assert isinstance(Uguess, np.ndarray)
-    assert isinstance(inputs, np.ndarray)
+    # assert isinstance(Xguess, np.ndarray)
+    # assert isinstance(Uguess, np.ndarray)
+    # assert isinstance(inputs, np.ndarray)
+
+    Xguess = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    Uguess = np.array([0.0, 0.0, 0.0, 0.0])
 
     x = Xguess.copy()
     u = Uguess.copy()
 
+    xcg = Xcg
+
     if printOn:
-        print '------------------------------------------------------------'
-        print 'Running trimmerFun.m'
+        print('------------------------------------------------------------')
+        print('Running trimmerFun.py')
 
     # gamma singam rr  pr   tr  phi cphi sphi thetadot coord stab  orient
     const = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1]
@@ -49,54 +56,89 @@ def trimmerFun(Xguess, Uguess, orient, inputs, printOn, model='stevens', adjust_
         gamm = inputs[2]
         const[0] = gamm/rtod
         const[1] = sin(const[0])
+
     elif orient == 3:
         psidot = inputs[3]
-        const[4] = psidot/rtod
+        const[4] = psidot/rtod  # tr = turn 
+        tr = const[4]
+
+        gamm = inputs[2]
+        const[0] = gamm
+
+        phi = turn_coord_cons(tr, x[1], x[2], x[0], gamma=gamm)
+        const[5] = phi
+        const[6] = sin(phi)
+        const[7] = cos(phi)
+        x[4] = rate_of_climb_cons(gamm, x[1], x[2], phi)
+
     elif orient == 4:
         thetadot = inputs[4]
         const[8] = thetadot/rtod
 
     if orient == 3:
-        s = np.zeros(shape=(7,))
-        s[0] = u[0]
-        s[1] = u[1]
-        s[2] = u[2]
-        s[3] = u[3]
-        s[4] = x[1]
-        s[5] = x[3]
-        s[6] = x[4]
-    else:
+        s = np.zeros(shape=(5,))
+        s[0] = x[1]
+        s[1] = u[0]
+        s[2] = u[1]
+        s[3] = u[2]
+        s[4] = u[3]
+    else:               # for orient 1, 2, 4
         s = np.zeros(shape=(3,))
         s[0] = u[0]
         s[1] = u[1]
         s[2] = x[1]
 
-    maxiter = 1000
-    tol = 1e-7
-    minimize_tol = 1e-9
+    if printOn:
+        print(f"initial cost = {clf16(s, x, u, xcg, const, model, adjust_cy)}")
 
-    res = minimize(clf16, s, args=(x, u, const, model, adjust_cy), method='Nelder-Mead', tol=minimize_tol, \
-                   options={'maxiter': maxiter})
+    # #=== MINIMIZE Algorithm =============================================================
+    # maxiter = 1000
+    # tol = 1e-7
+    # minimize_tol = 1e-9 #1e-9
 
-    cost = res.fun
+    # res = minimize(clf16, s, args=(x, u, xcg, const, model, adjust_cy), method='Nelder-Mead', tol=minimize_tol, \
+    #                options={'maxiter': maxiter})
+
+    # cost = res.fun
+    # #===================================================================================
+
+    ##=== FMIN Algorithm ================================================================
+    s = fmin(clf16, s, args=(x, u, xcg, const, model, adjust_cy), xtol=1e-12, maxiter=2000)
+
+    J = clf16(s, x, u, xcg, const, model, adjust_cy)
+    if printOn:
+        print(f"cost = {J}")
+
+    if orient != 3:
+        x[1] = s[2]
+        u[0] = s[0]
+        u[1] = s[1]
+    else:
+        x[1] = s[0]
+        u[0] = s[1]
+        u[1] = s[2]
+        u[2] = s[3]
+        u[3] = s[4]
+    
+
+    ##===================================================================================
 
     if printOn:
-        print 'Throttle (percent):            {}'.format(u[0])
-        print 'Elevator (deg):                {}'.format(u[1])
-        print 'Ailerons (deg):                {}'.format(u[2])
-        print 'Rudder (deg):                  {}'.format(u[3])
-        print 'Angle of Attack (deg):         {}'.format(rtod*x[1])
-        print 'Sideslip Angle (deg):          {}'.format(rtod*x[2])
-        print 'Pitch Angle (deg):             {}'.format(rtod*x[4])
-        print 'Bank Angle (deg):              {}'.format(rtod*x[3])
+        print(f'Throttle (percent):            {u[0]}')
+        print(f'Elevator (deg):                {u[1]}')
+        print(f'Ailerons (deg):                {u[2]}')
+        print(f'Rudder (deg):                  {u[3]}')
+        print(f'Angle of Attack (deg):         {rtod*x[1]}')
+        print(f'Sideslip Angle (deg):          {rtod*x[2]}')
+        print(f'Pitch Angle (deg):             {rtod*x[4]}')
+        print(f'Bank Angle (deg):              {rtod*x[3]}')
 
         amach, qbar = adc(x[0], x[11])
-        print 'Dynamic Pressure (psf):        {}'.format(qbar)
-        print 'Mach Number:                   {}'.format(amach)
+        print(f'Dynamic Pressure (psf):        {qbar}')
+        print(f'Mach Number:                   {amach}')
 
-        print ''
-        print 'Cost Function:           {}'.format(cost)
-
-    assert cost < tol, "trimmerFun did not converge"
+        # print('')
+        # print(f'Cost Function:           {cost}')
+    # assert cost < tol, "trimmerFun did not converge"
 
     return x, u

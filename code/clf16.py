@@ -27,23 +27,21 @@ def clf16(s, x, u, xcg, const, model='stevens', adjust_cy=True):
         u[1] = s[1]
         x[1] = s[2]
     else:
-        u[0] = s[0]
-        u[1] = s[1]
-        u[2] = s[2]
-        u[3] = s[3]
-        x[1] = s[4]
-        x[3] = s[5]
-        x[4] = s[6]
+        x[1] = s[0]
+        u[0] = s[1]
+        u[1] = s[2]
+        u[2] = s[3]
+        u[3] = s[4]
 
     #
     # Get the current power and constraints
     #
     x[12] = tgear(u[0])
-    [x, u] = conf16(x, u, const)
+    x, u = conf16(x, u, const)
 
     # we just want the derivative
-    subf16 = lambda x, u: subf16_model(x, u, xcg, model, adjust_cy)[0]
-
+    subf16 = lambda x, u: subf16_model(x, u, Xcg=xcg, model=model, adjust_cy=adjust_cy)[0]
+    
     xd = subf16(x, u)
 
     #
