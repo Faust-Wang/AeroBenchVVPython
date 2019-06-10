@@ -10,6 +10,7 @@ from math import sin, cos, asin, sqrt, tan, atan
 from tgear import tgear
 
 ## coordinate turn constraints
+## from : https://github.com/AeroPython/PyFME/blob/master/src/pyfme/utils/trimmer.py
 def turn_coord_cons(turn_rate, alpha, beta, TAS, gamma=0):
     """Calculates phi for coordinated turn.
     """
@@ -33,6 +34,7 @@ def turn_coord_cons(turn_rate, alpha, beta, TAS, gamma=0):
         phi = atan(G * cos(beta) / cos(alpha) * num / den)
     return phi
 
+## from : https://github.com/AeroPython/PyFME/blob/master/src/pyfme/utils/trimmer.py
 ## ROC constraints
 def rate_of_climb_cons(gamma, alpha, beta, phi):
     """Calculates theta for the given ROC, wind angles, and roll angle.
