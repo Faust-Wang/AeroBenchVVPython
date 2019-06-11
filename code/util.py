@@ -108,3 +108,12 @@ def sign(ele):
 
     return rv
 
+def print_matrix(matrix_):
+    def custom_round(num):
+        return float("%.4f" % num)
+    for i in matrix_:
+        lst = []
+        for j in i:
+            a = custom_round(j)
+            lst.append(a)
+        print(lst)
