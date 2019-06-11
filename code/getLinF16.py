@@ -5,7 +5,6 @@ Get linearized version of f16 model about a trim point
 '''
 
 import numpy as np
-import control.matlab as cm
 from jacobFun import jacobFun
 from trimmerFun import trimmerFun
 from util import print_matrix
