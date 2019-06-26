@@ -30,66 +30,72 @@ def jacobFun(Xequil, Uequil, Xcg, printOn, model, adjust_cy, C_and_D):
     x = xe.copy()
     u = ue.copy()
 
-    tol = 0.01
+    n = len(Xequil)
+    m = len(Uequil) 
+
+    tol = 1e-6
 
     xde, _, _, aze, aye = subf16_model(x, u, Xcg=Xcg, model=model, adjust_cy=adjust_cy)
 
     #####   A matrix    #####
-    AA = np.zeros((13, 13))     # 13= n = len(x)
+    dx = 0.01*x
+    for i in range(0,n):
+        if dx[i] == 0.0:
+            dx[i] = 0.1
 
-    for i in range(13):
-        for j in range(13):
-            x = xe.copy()
-            delta = 0.01
-            slope1 = 0
-            diff = .9
+    last = np.zeros((n,1), dtype=float)
+    A = np.zeros((n,n), dtype=float)
 
-            if xe[i] == 0:
-                delta = 0.5
-            else:
-                delta = delta * xe[i]
+    for j in range(0,n):
+        xt = x
+        for i in range(0,10):
+            xt[j] = x[j] + dx[j]
+            xd1 = subf16_model(xt, u, Xcg=Xcg, model=model, adjust_cy=adjust_cy)[0]
+            xt[j] = x[j] - dx[j]
+            xd2 = subf16_model(xt, u, Xcg=Xcg, model=model, adjust_cy=adjust_cy)[0]
+            A[:, j] = (np.transpose(xd1.ravel() - xd2.ravel()) / (2*dx[j]))
+            if np.max(np.abs(A[:,j] - last) / abs(A[:,j] + 1e-12)) < tol:
+                break
+            dx[j] = 0.5*dx[j]
+            last = A[:,j]
+        ## column = j
+        iteration = i
+        if iteration == 10:
+            print(f"not converged on A, column {j}")
 
-            while diff > tol:
-                x[i] = xe[i] + delta
-                xd = subf16_model(x, u, Xcg=Xcg, model=model, adjust_cy=adjust_cy)[0]
-
-                slope2 = (xd[j] - xde[j]) / delta
-                diff = abs(slope1 - slope2)
-                delta = delta * .1
-                slope1 = slope2
-
-                assert diff <= 1e6, 'No convergence when numerically computing A matrix'
-
-            AA[j, i] = slope1
+    AA = 2*A
 
     #####   B matrix    #####
-    BB = np.zeros((13, 4))
+    du = 0.01*u
 
-    x = xe.copy()
-    for i in range(4):
-        for j in range(13):
-            u = ue.copy()
-            delta = 0.01
-            slope1 = 0
-            diff = 1
+    for i in range(0,m):
+        if du[i] == 0.0:
+            du[i] = 0.1
 
-            if ue[i] == 0:
-                delta = 0.5
-            else:
-                delta = delta * ue[i]
+    last = np.zeros((n,1), dtype=float)
+    B = np.zeros((n,m), dtype=float)
 
-            while diff > tol:
-                u[i] = ue[i] + delta
-                xd = subf16_model(x, u, Xcg=Xcg, model=model, adjust_cy=adjust_cy)[0]
-
-                slope2 = (xd[j] - xde[j]) / delta
-                diff = abs(slope2 - slope1)
-                delta = delta * .1
-                slope1 = slope2
-
-                assert diff <= 1e6, 'No convergence when numerically computing B matrix'
-
-            BB[j, i] = slope1
+    for j in range(0,m):
+        ut = u
+        for i in range(0,10):
+            ut[j] = u[j] + du[j]
+            ut = ut
+            xd1 = xd2 = subf16_model(x, ut, Xcg=Xcg, model=model, adjust_cy=adjust_cy)[0]
+            ut[j] = u[j] - du[j]
+            ut = ut
+            xd2 = subf16_model(x, ut, Xcg=Xcg, model=model, adjust_cy=adjust_cy)[0]
+            B[:, j] = (np.transpose(xd1.ravel() - xd2.ravel()) / (2*du[j]))
+            if np.max(np.abs(B[:,j] - last) / abs(B[:,j] + 1e-12)) < tol:
+                break
+            dx[j] = 0.5*dx[j]
+            du[j] = 0.5*du[j]
+            last = B[:,j]
+        ## column = j
+        iteration = i
+        if iteration == 10:
+            print(f"not converged on B, column {j}")    
+    
+    BB = 2*B
 
     if C_and_D == True:
         #####   C matrix    #####
