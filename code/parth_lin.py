@@ -25,7 +25,7 @@ A_exp = np.array([
 ])
 
         # index             0     1    2      3      4   6  7  8
-        # default states => vt, alpha, beta, phi, theta, p, q, r                    # some serious problems # completely redo both matrix 
+        # default states => vt, alpha, beta, phi, theta, p, q, r
 A1 = np.hstack((A[0:5, 0:5], A[0:5, 6:9]))          
 A2 = np.hstack((A[6:9, 0:5], A[6:9, 6:9]))
 A_ = np.vstack((A1, A2))
