@@ -88,3 +88,67 @@ def getLinF16(orient, inputs, Xcg, printOn=False, model='stevens', adjust_cy=Tru
         return A, B, C, D
     
     return A, B
+
+
+def get_lon_A(A_matrix):
+    
+    A = A_matrix
+
+    A_lon = np.array(
+        [
+        [A[0,0], A[0,1], A[0,4], A[0,7]],
+        [A[1,0], A[1,1], A[1,4], A[1,7]],
+        [A[4,0], A[4,1], A[4,4], A[4,7]],
+        [A[7,0], A[7,1], A[7,4], A[7,7]]
+        ]
+    )
+
+    return A_lon
+
+def get_lon_B(B_matrix):
+
+    B = B_matrix
+
+    B_lon = np.array(
+        [
+        [B[0,0], B[0,1]],
+        [B[1,0], B[1,1]],
+        [B[4,0], B[4,1]],
+        [B[7,0], B[7,1]]
+        ]
+    )
+
+    return B_lon
+
+def get_lat_A(A_matrix):
+
+    A = A_matrix
+
+    A_lat = np.array(
+        [
+        [A[2,2], A[2,3], A[2,6], A[2,8]],
+        [A[3,2], A[3,3], A[3,6], A[3,8]],
+        [A[6,2], A[6,3], A[6,6], A[6,8]],
+        [A[8,2], A[8,3], A[8,6], A[8,8]]
+        ]
+    )
+
+    return A_lat
+
+def get_lat_B(B_matrix):
+
+    B = B_matrix
+
+    B_lat = np.array(
+        [
+        [B[2,2], B[2,3]],
+        [B[3,2], B[3,3]],
+        [B[6,2], B[6,3]],
+        [B[8,2], B[8,3]]
+        ]
+    )
+
+    return B_lat
+
+# states =    Vt  alpha  beta  phi theta psi   p     q    r    xe    ye   ze   power
+#              0   1       2    3    4    5    6     7    8    9     10    11   12
